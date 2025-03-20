@@ -1,25 +1,17 @@
 <script lang="ts">
-  import type { Difficulty } from "@/types/index.types";
   import type { Question, Response } from "@/types/quiz.types";
+  import { questionState } from "@/state/question";
+  import { quizState } from "@/state/quiz";
 
   import { onMount } from "svelte";
   import { env } from "../constants";
-
-  // Types
-  interface QuizProps {
-    difficulty: Difficulty | null;
-    setComplete: (score: number, total: number) => void;
-  }
-  let { difficulty, setComplete }: QuizProps = $props();
+  import { screen } from "@/state/layout";
 
   // State
   let questions = $state<Question[]>([]);
   let questionIndex = $state(0);
   let selectedAnswer = $state<string | null>(null);
   let shuffledAnswers = $state<string[]>([]);
-  let score = $state(0);
-  let timer = $state(0);
-  let timerInterval = $state<ReturnType<typeof setInterval> | null>(null);
   let isLoading = $state(true);
 
   // Utils
@@ -47,30 +39,40 @@
   }
 
   function nextQuestion() {
-    if (timerInterval) clearInterval(timerInterval);
+    if ($questionState.timerInterval)
+      clearInterval($questionState.timerInterval);
 
     const current = questions[questionIndex];
     if (selectedAnswer === current.correct_answer) {
-      score++;
+      $quizState.score++;
     }
 
     if (questionIndex < questions.length - 1) {
       questionIndex++;
       setCurrentQuestion();
     } else {
-      setComplete(score, questions.length);
+      $quizState.isComplete = true;
+      $quizState.score = $quizState.score++;
+      $screen = "result";
+      $questionState.level = null;
     }
   }
 
   function startTimer() {
-    if (timerInterval) clearInterval(timerInterval);
+    if ($questionState.timerInterval)
+      clearInterval($questionState.timerInterval);
 
-    timer = difficulty === "easy" ? 30 : difficulty === "medium" ? 20 : 10;
+    $questionState.timer =
+      $questionState.level === "easy"
+        ? 30
+        : $questionState.level === "medium"
+          ? 20
+          : 10;
 
-    timerInterval = setInterval(() => {
-      timer--;
-      if (timer <= 0) {
-        clearInterval(timerInterval!);
+    $questionState.timerInterval = setInterval(() => {
+      $questionState.timer--;
+      if ($questionState.timer <= 0) {
+        clearInterval($questionState.timerInterval!);
         nextQuestion();
       }
     }, 1000);
@@ -82,7 +84,7 @@
 
     try {
       const response = await fetch(
-        `${env.VITE_API_URL}?amount=10&difficulty=${difficulty}&encode=base64`,
+        `${env.VITE_API_URL}?amount=10&difficulty=${$questionState.level}&encode=base64`,
       );
       const data: Response = await response.json();
 
@@ -114,10 +116,10 @@
 {#if isLoading}
   <div
     class={[
-      "flex justify-center items-center min-h-screen text-center",
-      difficulty === "easy"
+      "flex justify-center items-center min-h-[calc(100vh-4rem)] text-center h-full",
+      $questionState.level === "easy"
         ? "bg-green-200"
-        : difficulty === "medium"
+        : $questionState.level === "medium"
           ? "bg-yellow-200"
           : "bg-red-200",
     ]}
@@ -130,10 +132,10 @@
   <!-- Quiz Content -->
   <div
     class={[
-      "flex flex-col justify-center items-center min-h-screen px-4 text-center",
-      difficulty === "easy"
+      "flex flex-col justify-center items-center min-h-screen px-4 p-8 text-center",
+      $questionState.level === "easy"
         ? "bg-green-200"
-        : difficulty === "medium"
+        : $questionState.level === "medium"
           ? "bg-yellow-200"
           : "bg-red-200",
     ]}
@@ -143,12 +145,12 @@
       class="w-full max-w-2xl flex justify-between items-center mb-6 text-sm text-dodger-blue-500"
     >
       <span>Question {questionIndex + 1} / {questions.length}</span>
-      <span>Time: {timer}s</span>
+      <span>Time: {$questionState.timer}s</span>
     </div>
 
     <!-- Question Card -->
     <div
-      class="bg-white p-8 w-full max-w-2xl shadow-[1rem_1.25rem_0_0_#000000] hover:shadow-[0.75rem_1rem_0_0_#000000] transform transition-all duration-300"
+      class="bg-white p-8 w-full max-w-2xl shadow-[-0.75rem_0.75rem_0_0_#000000] hover:shadow-[-0.5rem_0.5rem_0_0_#000000] transform transition-all duration-300"
     >
       <h2 class="text-xl font-semibold mb-12">
         {@html questions[questionIndex].question}

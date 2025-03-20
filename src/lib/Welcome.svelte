@@ -1,56 +1,55 @@
 <script lang="ts">
-  interface WelcomeProps {
-    difficulty: "easy" | "medium" | "hard" | null;
-    onSelectDifficulty: (value: "easy" | "medium" | "hard") => void;
-    onStartQuiz: () => void;
-  }
-  const { difficulty, onSelectDifficulty, onStartQuiz }: WelcomeProps =
-    $props();
+  import { screen } from "@/state/layout";
+  import { questionState } from "@/state/question";
+  import { quizState } from "@/state/quiz";
 
   let isDifficultyAvailable = $state(true);
 
   function checkDifficulty() {
-    if (!difficulty) {
+    if (!$questionState.level) {
       isDifficultyAvailable = false; // Show warning
       return;
     }
 
     isDifficultyAvailable = true; // Clear warning if valid
-    onStartQuiz(); // Start the quiz!
+    $quizState.isStart = true;
+    $screen = "quiz";
   }
 </script>
 
-<div class="flex flex-col min-h-screen justify-center items-center gap-y-12">
+<div
+  class="flex flex-col min-h-[calc(100vh-4rem)] justify-center items-center gap-y-12 p-4 -translate-y-12"
+>
   <div class="flex flex-col items-center gap-y-4">
     <h3 class="text-xl font-semibold">Select Difficulty:</h3>
-    <div class="flex gap-x-8 items-center">
+    <div class="flex flex-col gap-8 items-center">
       <button
         class={[
-          "bg-green-300 btn",
-          difficulty === "easy" &&
-            "!shadow-[0.25rem_0.25rem_0_0_#000000] translate-y-[10px]",
+          "bg-green-300 btn hover:-translate-y-0.5",
+          $questionState.level === "easy" &&
+            "!shadow-[-0.25rem_0.25rem_0_0_#000000] translate-y-[10px]",
         ]}
-        onclick={() => onSelectDifficulty("easy")}
+        onclick={() => ($questionState.level = "easy")}
       >
         Easy
       </button>
       <button
         class={[
-          "bg-yellow-300 btn",
-          difficulty === "medium" &&
-            "!shadow-[0.25rem_0.25rem_0_0_#000000] translate-y-[10px]",
+          "bg-yellow-300 btn hover:-translate-y-0.5",
+          $questionState.level === "medium" &&
+            "!shadow-[-0.25rem_0.25rem_0_0_#000000] translate-y-[10px]",
         ]}
-        onclick={() => onSelectDifficulty("medium")}
+        onclick={() => ($questionState.level = "medium")}
       >
         Medium
       </button>
       <button
         class={[
-          "bg-red-300 btn",
-          difficulty === "hard" &&
-            "!shadow-[0.25rem_0.25rem_0_0_#000000] translate-y-[10px]",
+          "bg-red-300 btn hover:-translate-y-0.5",
+          $questionState.level === "hard" &&
+            "!shadow-[-0.25rem_0.25rem_0_0_#000000] translate-y-[10px]",
         ]}
-        onclick={() => onSelectDifficulty("hard")}
+        onclick={() => ($questionState.level = "hard")}
       >
         Hard
       </button>
@@ -58,7 +57,7 @@
   </div>
   <div class="mt-8">
     <button
-      class="bg-dodger-blue-300 btn hover:shadow-[0.25rem_0.25rem_0_0_#000000] translate-y-[10px]"
+      class="bg-dodger-blue-300 btn hover:shadow-[-0.25rem_0.25rem_0_0_#000000] translate-y-[10px] hover:-translate-y-1"
       onclick={checkDifficulty}
     >
       Start Quiz
